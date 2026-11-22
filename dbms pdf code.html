@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Attendance & Duty Management System</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:Arial,sans-serif;
+}
+
+body{
+background:#f5f7fb;
+padding:20px;
+}
+
+header{
+background:#2563eb;
+color:white;
+padding:20px;
+border-radius:10px;
+text-align:center;
+margin-bottom:20px;
+}
+
+.container{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+gap:15px;
+margin-bottom:20px;
+}
+
+.card{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,0.1);
+text-align:center;
+}
+
+.card h3{
+margin-bottom:10px;
+}
+
+.form-box{
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 2px 8px rgba(0,0,0,0.1);
+margin-bottom:20px;
+}
+
+input,select{
+width:100%;
+padding:10px;
+margin:10px 0;
+border:1px solid #ccc;
+border-radius:5px;
+}
+
+button{
+padding:10px 15px;
+border:none;
+border-radius:5px;
+cursor:pointer;
+margin:5px;
+}
+
+.primary{
+background:#2563eb;
+color:white;
+}
+
+.success{
+background:#22c55e;
+color:white;
+}
+
+.danger{
+background:#ef4444;
+color:white;
+}
+
+table{
+width:100%;
+background:white;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+padding:12px;
+border:1px solid #ddd;
+text-align:center;
+}
+
+th{
+background:#2563eb;
+color:white;
+}
+
+.search{
+margin-bottom:15px;
+}
+
+@media(max-width:768px){
+table{
+font-size:12px;
+}
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>Student & Employee Attendance Management System</h1>
+<p>AI Assisted Attendance & Duty Tracking</p>
+</header>
+
+<div class="container">
+
+<div class="card">
+<h3>Total Records</h3>
+<h2 id="total">0</h2>
+</div>
+
+<div class="card">
+<h3>Present</h3>
+<h2 id="present">0</h2>
+</div>
+
+<div class="card">
+<h3>Attendance %</h3>
+<h2 id="percentage">0%</h2>
+</div>
+
+</div>
+
+<div class="form-box">
+
+<h2>Add Attendance</h2>
+
+<select id="type">
+<option>Student</option>
+<option>Employee</option>
+</select>
+
+<input type="text" id="id" placeholder="Roll No / Employee ID">
+
+<input type="text" id="name" placeholder="Name">
+
+<input type="text" id="department" placeholder="Department">
+
+<button class="success" onclick="addAttendance()">
+Check In
+</button>
+
+<button class="primary" onclick="exportCSV()">
+Export CSV
+</button>
+
+</div>
+
+<div class="search">
+<input type="text" id="search"
+placeholder="Search by Name or ID"
+onkeyup="renderTable()">
+</div>
+
+<table>
+
+<thead>
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Type</th>
+<th>Department</th>
+<th>Date</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="tableBody"></tbody>
+
+</table>
+
+<script>
+
+let records =
+JSON.parse(localStorage.getItem("attendance")) || [];
+
+function saveData(){
+localStorage.setItem(
+"attendance",
+JSON.stringify(records)
+);
+}
+
+function addAttendance(){
+
+let id =
+document.getElementById("id").value;
+
+let name =
+document.getElementById("name").value;
+
+let type =
+document.getElementById("type").value;
+
+let dept =
+document.getElementById("department").value;
+
+if(id==="" || name===""){
+alert("Please enter all details");
+return;
+}
+
+records.push({
+id:id,
+name:name,
+type:type,
+department:dept,
+date:new Date().toLocaleString()
+});
+
+saveData();
+renderTable();
+
+document.getElementById("id").value="";
+document.getElementById("name").value="";
+document.getElementById("department").value="";
+}
+
+function renderTable(){
+
+let search =
+document.getElementById("search")
+.value.toLowerCase();
+
+let body =
+document.getElementById("tableBody");
+
+body.innerHTML="";
+
+let filtered =
+records.filter(r =>
+r.name.toLowerCase().includes(search) ||
+r.id.toLowerCase().includes(search)
+);
+
+filtered.forEach((r,index)=>{
+
+body.innerHTML += `
+<tr>
+<td>${r.id}</td>
+<td>${r.name}</td>
+<td>${r.type}</td>
+<td>${r.department}</td>
+<td>${r.date}</td>
+<td>
+<button class="danger"
+onclick="deleteRecord(${index})">
+Delete
+</button>
+</td>
+</tr>
+`;
+});
+
+updateDashboard();
+}
+
+function deleteRecord(index){
+
+records.splice(index,1);
+
+saveData();
+renderTable();
+
+}
+
+function updateDashboard(){
+
+document.getElementById("total")
+.innerText=records.length;
+
+document.getElementById("present")
+.innerText=records.length;
+
+let percent = records.length
+? 100 : 0;
+
+document.getElementById("percentage")
+.innerText=percent+"%";
+}
+
+function exportCSV(){
+
+let csv =
+"ID,Name,Type,Department,Date\n";
+
+records.forEach(r=>{
+csv += `${r.id},
+${r.name},
+${r.type},
+${r.department},
+${r.date}\n`;
+});
+
+const blob =
+new Blob([csv],
+{type:"text/csv"});
+
+const url =
+window.URL.createObjectURL(blob);
+
+const a =
+document.createElement("a");
+
+a.href=url;
+a.download="attendance.csv";
+a.click();
+
+}
+
+renderTable();
+
+</script>
+
+</body>
+</html>
